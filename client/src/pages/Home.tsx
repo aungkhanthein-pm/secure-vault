@@ -1,31 +1,51 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { getLoginUrl } from "@/const";
-import { Streamdown } from 'streamdown';
+import { useLocation } from "wouter";
+import { DASHBOARD_PATH, LOGIN_PATH } from "@/const";
 
-/**
- * All content in this page are only for example, replace with your own feature implementation
- * When building pages, remember your instructions in Frontend Workflow, Frontend Best Practices, Design Guide and Common Pitfalls
- */
 export default function Home() {
-  // The userAuth hooks provides authentication state
-  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
-  let { user, loading, error, isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+  const [, navigate] = useLocation();
 
-  // If theme is switchable in App.tsx, we can implement theme toggling like this:
-  // const { theme, toggleTheme } = useTheme();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold mb-4">Welcome to SecureVault</h1>
+          <p className="text-muted-foreground mb-8">Your secure document storage</p>
+          <Button onClick={() => navigate(DASHBOARD_PATH)} size="lg">
+            Go to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <main>
-        {/* Example: lucide-react for icons */}
-        <Loader2 className="animate-spin" />
-        Example Page
-        {/* Example: Streamdown for markdown rendering */}
-        <Streamdown>Any **markdown** content</Streamdown>
-        <Button variant="default">Example Button</Button>
-      </main>
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold mb-4">SecureVault</h1>
+        <p className="text-muted-foreground mb-8">Encrypted Document Storage</p>
+        <div className="flex gap-4 justify-center">
+          <Button onClick={() => navigate(LOGIN_PATH)} variant="default" size="lg">
+            Sign In
+          </Button>
+          <Button onClick={() => navigate("/register")} variant="outline" size="lg">
+            Sign Up
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
