@@ -1,15 +1,17 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, longtext, boolean, bigint } from "drizzle-orm/mysql-core";
+import { integer, pgEnum, pgTable, text, timestamp, varchar, boolean, bigint } from "drizzle-orm/pg-core";
 
 /**
  * Users table with email/password authentication (no OAuth).
  * Stores hashed passwords, TOTP secrets, and encryption metadata.
  */
-export const users = mysqlTable("users", {
-  id: int("id").autoincrement().primaryKey(),
+export const roleEnum = pgEnum("role", ["user", "admin"]);
+
+export const users = pgTable("users", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   email: varchar("email", { length: 320 }).notNull().unique(),
   passwordHash: text("passwordHash").notNull(),
   name: text("name"),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: roleEnum("role").default("user").notNull(),
   
   // TOTP 2FA fields
   totpSecret: varchar("totpSecret", { length: 64 }), // Base32-encoded secret
@@ -21,7 +23,7 @@ export const users = mysqlTable("users", {
   passphraseHash: text("passphraseHash"), // Hash of master passphrase for verification
   
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
@@ -32,9 +34,9 @@ export type InsertUser = typeof users.$inferInsert;
  * TOTP backup codes table.
  * Stores one-time backup codes for account recovery if authenticator is lost.
  */
-export const totpBackupCodes = mysqlTable("totp_backup_codes", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+export const totpBackupCodes = pgTable("totp_backup_codes", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer("userId").notNull(),
   code: varchar("code", { length: 20 }).notNull(),
   used: boolean("used").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -46,14 +48,14 @@ export type InsertTotpBackupCode = typeof totpBackupCodes.$inferInsert;
 /**
  * Folders/categories for organizing documents.
  */
-export const folders = mysqlTable("folders", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+export const folders = pgTable("folders", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer("userId").notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   color: varchar("color", { length: 7 }), // Hex color for UI
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type Folder = typeof folders.$inferSelect;
@@ -66,13 +68,13 @@ export type InsertFolder = typeof folders.$inferInsert;
  * Security model:
  * - fileKey: Encrypted with user's derived encryption key (PBKDF2 from master passphrase)
  * - iv: Initialization vector for AES-GCM encryption
- * - The actual file bytes are stored separately (in server storage or S3)
+ * - The actual file bytes are stored separately (in server storage or Supabase Storage)
  * - Client decrypts the fileKey, then uses it to decrypt the file bytes
  */
-export const files = mysqlTable("files", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  folderId: int("folderId"), // Optional folder association
+export const files = pgTable("files", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer("userId").notNull(),
+  folderId: integer("folderId"), // Optional folder association
   
   // File metadata (stored in plaintext for search/display)
   name: varchar("name", { length: 255 }).notNull(),
@@ -85,11 +87,11 @@ export const files = mysqlTable("files", {
   iv: varchar("iv", { length: 32 }).notNull(), // Hex-encoded IV for AES-GCM
   
   // Storage reference
-  storageKey: varchar("storageKey", { length: 512 }).notNull(), // Path/key in server storage
+  storageKey: varchar("storageKey", { length: 512 }).notNull(), // Path/key in Supabase Storage
   
   // Metadata
   uploadedAt: timestamp("uploadedAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   deletedAt: timestamp("deletedAt"), // Soft delete support
 });
 
@@ -100,9 +102,9 @@ export type InsertFile = typeof files.$inferInsert;
  * Session tokens for JWT-based authentication.
  * Stores refresh tokens for session management.
  */
-export const sessions = mysqlTable("sessions", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+export const sessions = pgTable("sessions", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer("userId").notNull(),
   refreshToken: varchar("refreshToken", { length: 512 }).notNull().unique(),
   expiresAt: timestamp("expiresAt").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
